@@ -1,8 +1,7 @@
 /*
  License: MIT / X11
- Copyright (c) 2011 by James K. Lawless
- jimbo@radiks.net http://www.radiks.net/~jimbo
- http://www.mailsend-online.com
+ Copyright (c) 2011-2022 by James K. Lawless
+ jimbo@radiks.net http://www.mailsend-online.com
 
  Permission is hereby granted, free of charge, to any person
  obtaining a copy of this software and associated documentation
@@ -60,6 +59,7 @@ namespace MailWrench
          string g_subject;
          string g_attach;
          string g_attachfile;
+         string g_filemissingaction;
          string g_bccfile;  
          string g_ccfile;
          string g_bccaddr;
@@ -107,7 +107,7 @@ namespace MailWrench
       {
          int i;
          g_out="";
-         g_version="MailWrench v 2.00 (Free, open source version)";
+         g_version="MailWrench v 2.10 (Free, open source version)";
          
          if(args.Length==0) {
             wr(
@@ -331,12 +331,24 @@ namespace MailWrench
 
       public void AddAttachments(MailMessage mail,string fname)
       {
+         if(!File.Exists(fname))
+         {
+            if(g_filemissingaction=="warn")
+            {
+                err("Attachment file: " + fname + " is not present.\r\n");
+                return;
+            }
+            if(g_filemissingaction=="silent")
+            {
+                return;
+            }
+         }
          Attachment data = new Attachment(fname, MediaTypeNames.Application.Octet);
          ContentDisposition disposition = data.ContentDisposition;
          disposition.CreationDate = System.IO.File.GetCreationTime(fname);
          disposition.ModificationDate = System.IO.File.GetLastWriteTime(fname);
          disposition.ReadDate = System.IO.File.GetLastAccessTime(fname);
-         mail.Attachments.Add(data);       
+         mail.Attachments.Add(data);
       }
       public void wr(string s) 
       {
@@ -369,6 +381,7 @@ namespace MailWrench
          wr(" -s subject           Specify subject\r\n");
          wr(" -a filename          Attach filename\r\n");
          wr(" -f filename          Attach files in list\r\n");
+         wr(" -filemissingaction   'fatal','warn', or 'silent'\r\n");
          wr("\r\n");
          wr(" -smtp smtp_addr      Specify SMTP server address\r\n");
          wr(" -port number         Specify port ( default is 25 ) \r\n");
@@ -433,6 +446,7 @@ namespace MailWrench
          g_smtp="";
          g_from="";
          g_filename="";
+         g_filemissingaction="fatal"; // could be "silent" or "warn" as well
 
          g_subject="";
          g_attach="";
@@ -514,6 +528,16 @@ namespace MailWrench
             if( ops[i].ToString().ToLower() == "-password")  {
                g_auth_pass=ops[i+1].ToString();
                i++;
+            }
+            else
+            if( ops[i].ToString().ToLower() == "-filemissingaction")  {
+               g_filemissingaction=ops[i+1].ToString().ToLower();
+               i++;
+               if((g_filemissingaction!="fatal")&&(g_filemissingaction!="warn")&&(g_filemissingaction!="silent"))
+               {
+                   err("Invalid -filemissingaction: " + g_filemissingaction + ". Must be 'fatal','warn', or 'silent'\r\n");
+                   Environment.Exit(1);
+               }
             }
             else
             if( ops[i].ToString().ToLower() == "-bccf")  {
