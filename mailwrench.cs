@@ -107,7 +107,7 @@ namespace MailWrench
       {
          int i;
          g_out="";
-         g_version="MailWrench v 2.10 (Free, open source version)";
+         g_version="MailWrench v 2.11 (Free, open source version)";
          
          if(args.Length==0) {
             wr(
@@ -368,6 +368,10 @@ namespace MailWrench
       public void err(string s)
       {
          Console.Error.Write(s);
+         if(g_out!="") {
+             g_tw.Write(s);
+             g_tw.Flush();
+         }
       }
       public void pause() 
       {
